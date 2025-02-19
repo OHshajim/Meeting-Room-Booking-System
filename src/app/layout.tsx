@@ -26,13 +26,10 @@ export default function RootLayout({
             <UserButton showName />
           </header>
           <main className="flex justify-between min-h-screen">
-            <SignedOut>
-              <div className="flex flex-col items-center mt-10">
-                <SignIn routing="hash" />
-              </div>
-            </SignedOut>
             <Sidebar />
-            <SignedIn>{children}</SignedIn>
+            <div className="flex-1 ">
+              <SignedIn>{children}</SignedIn>
+            </div>
           </main>
         </body>
       </html>
