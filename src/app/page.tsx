@@ -15,6 +15,7 @@ export default function Home() {
   const { data, isLoading } = useQuery({
     queryKey: ["dashboardData"],
     queryFn: async () => {
+      await SaveUser();
       const roomsRes = await Axios.get("/api/rooms");
       const bookingsRes = await Axios.get(`/api/bookings`);
 
