@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -10,7 +10,9 @@ import {
   MenuItem,
   Select,
 } from "@mui/material";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import useAxios from "@/CustomHooks/useAxios";
+import Loading from "@/Components/Loading";
 
 interface Room {
   id: string;
@@ -22,7 +24,8 @@ interface Room {
 
 export default function AllRooms() {
   const Axios = useAxios();
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const queryClient = useQueryClient();
+
   const [open, setOpen] = useState(false);
   const [editRoom, setEditRoom] = useState<Room | null>(null);
   const [newRoom, setNewRoom] = useState({
@@ -30,24 +33,24 @@ export default function AllRooms() {
     capacity: 0,
     amenities: "",
   });
-
   const [filters, setFilters] = useState({ capacity: "", amenities: "" });
 
-  useEffect(() => {
-    fetchRooms();
-  }, [filters]);
-
-  const fetchRooms = async () => {
-    try {
+  // Fetch rooms with filters
+  const {
+    data: rooms,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["rooms", filters],
+    queryFn: async () => {
       const { data } = await Axios.get("/api/rooms", { params: filters });
-      setRooms(data);
-    } catch (error) {
-      console.error("Error fetching rooms:", error);
-    }
-  };
+      return data;
+    },
+  });
 
-  const handleSave = async () => {
-    try {
+  // Create or update room
+  const saveRoomMutation = useMutation({
+    mutationFn: async () => {
       const amenitiesArray = newRoom.amenities
         .split(",")
         .map((item) => item.trim());
@@ -57,29 +60,30 @@ export default function AllRooms() {
       }, {} as Record<string, boolean>);
 
       if (editRoom) {
-        await Axios.patch(`/api/rooms/${editRoom.id}`, {
+        return Axios.patch(`/api/rooms/${editRoom.id}`, {
           ...newRoom,
           amenities: parsedAmenities,
         });
       } else {
-        await Axios.post("/api/rooms", {
+        return Axios.post("/api/rooms", {
           ...newRoom,
           amenities: parsedAmenities,
         });
       }
-      fetchRooms();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
       setOpen(false);
       setNewRoom({ name: "", capacity: 0, amenities: "" });
       setEditRoom(null);
-    } catch (error) {
-      console.error("Error saving room:", error);
-    }
-  };
+    },
+  });
 
-  const handleDelete = async (id: string) => {
-    await Axios.delete(`/api/rooms/${id}`);
-    fetchRooms();
-  };
+  // Delete room
+  const deleteRoomMutation = useMutation({
+    mutationFn: async (id: string) => Axios.delete(`/api/rooms/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["rooms"] })
+  });
 
   return (
     <div className="p-6">
@@ -101,8 +105,8 @@ export default function AllRooms() {
           displayEmpty
         >
           <MenuItem value="">All Capacities</MenuItem>
-          <MenuItem value="10">10</MenuItem>
-          <MenuItem value="20">20</MenuItem>
+          <MenuItem value="50">50</MenuItem>
+          <MenuItem value="100">100</MenuItem>
         </Select>
         <TextField
           label="Amenities (e.g., WiFi, Projector)"
@@ -114,49 +118,55 @@ export default function AllRooms() {
       </div>
 
       {/* Room Table */}
-      <table className="w-full border-collapse border border-gray-300">
-        <thead>
-          <tr className="bg-gray-200">
-            <th className="border p-2">Room Name</th>
-            <th className="border p-2">Capacity</th>
-            <th className="border p-2">Amenities</th>
-            <th className="border p-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rooms.map((room) => (
-            <tr key={room.id} className="border text-center">
-              <td className="border p-2">{room.name}</td>
-              <td className="border p-2">{room.capacity}</td>
-              <td className="border p-2">
-                {Object.keys(room.amenities).join(", ")}
-              </td>
-              <td className="border p-2 flex gap-5 items-center justify-center">
-                <button
-                  className="bg-green-300 text-black font-bold px-2 py-1 rounded mr-2"
-                  onClick={() => {
-                    setEditRoom(room);
-                    setNewRoom({
-                      name: room.name,
-                      capacity: room.capacity,
-                      amenities: Object.keys(room.amenities).join(", "),
-                    });
-                    setOpen(true);
-                  }}
-                >
-                  Edit
-                </button>
-                <button
-                  className="bg-red-500 text-white px-2 py-1 rounded"
-                  onClick={() => handleDelete(room.id)}
-                >
-                  Delete
-                </button>
-              </td>
+      {isLoading ? (
+        <Loading />
+      ) : isError ? (
+        <p className="text-red-500">Error fetching rooms</p>
+      ) : (
+        <table className="w-full border-collapse border border-gray-300">
+          <thead>
+            <tr className="bg-gray-200">
+              <th className="border p-2">Room Name</th>
+              <th className="border p-2">Capacity</th>
+              <th className="border p-2">Amenities</th>
+              <th className="border p-2">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rooms.map((room: Room) => (
+              <tr key={room.id} className="border text-center">
+                <td className="border p-2">{room.name}</td>
+                <td className="border p-2">{room.capacity}</td>
+                <td className="border p-2">
+                  {Object.keys(room.amenities).join(", ")}
+                </td>
+                <td className="border p-2 flex gap-5 items-center justify-center">
+                  <button
+                    className="bg-green-300 text-black font-bold px-2 py-1 rounded mr-2"
+                    onClick={() => {
+                      setEditRoom(room);
+                      setNewRoom({
+                        name: room.name,
+                        capacity: room.capacity,
+                        amenities: Object.keys(room.amenities).join(", "),
+                      });
+                      setOpen(true);
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="bg-red-500 text-white px-2 py-1 rounded"
+                    onClick={() => deleteRoomMutation.mutate(room.id)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
       {/* Add/Edit Room Modal */}
       <Dialog open={open} onClose={() => setOpen(false)}>
@@ -166,7 +176,7 @@ export default function AllRooms() {
             label="Room Name"
             fullWidth
             margin="dense"
-            value={newRoom.name}
+            defaultValue={editRoom?.name}
             onChange={(e) => setNewRoom({ ...newRoom, name: e.target.value })}
           />
           <TextField
@@ -174,7 +184,7 @@ export default function AllRooms() {
             type="number"
             fullWidth
             margin="dense"
-            value={newRoom.capacity}
+            defaultValue={editRoom?.capacity}
             onChange={(e) =>
               setNewRoom({ ...newRoom, capacity: Number(e.target.value) })
             }
@@ -183,7 +193,7 @@ export default function AllRooms() {
             label="Amenities (comma-separated)"
             fullWidth
             margin="dense"
-            value={newRoom.amenities}
+            defaultValue={editRoom?.amenities}
             onChange={(e) =>
               setNewRoom({ ...newRoom, amenities: e.target.value })
             }
@@ -199,7 +209,7 @@ export default function AllRooms() {
           >
             Cancel
           </Button>
-          <Button onClick={handleSave} color="primary">
+          <Button onClick={() => saveRoomMutation.mutate()} color="primary">
             {editRoom ? "Update" : "Add"} Room
           </Button>
         </DialogActions>

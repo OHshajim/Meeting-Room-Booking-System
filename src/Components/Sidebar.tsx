@@ -1,5 +1,6 @@
 "use client";
 import useAxios from "@/CustomHooks/useAxios";
+import { UserRoleCheck } from "@/Service/APICalls";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CiMenuFries } from "react-icons/ci";
@@ -18,17 +19,11 @@ const Sidebar = () => {
   const [isAdmin, setAdmin] = useState(false);
 
   useEffect(() => {
-    const UserRoleCheck = async () => {
-      try {
-        const response = await Axios.get(
-          `${window.location.origin}/api/auth/CheckUserRole`
-        );
-        setAdmin(response.data.role === "ADMIN");
-      } catch (error) {
-        console.error("Error fetching user role:", error);
-      }
+    const userRoleCheck = async () => {
+      const response = await UserRoleCheck();
+      setAdmin(response || false);
     };
-    UserRoleCheck();
+    userRoleCheck();
   }, []);
   const handleClose = () => setOpenSidebar(false);
 

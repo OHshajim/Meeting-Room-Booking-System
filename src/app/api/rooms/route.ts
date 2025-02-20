@@ -7,11 +7,28 @@ export async function GET(req: Request) {
 
   const filters: any = {};
 
-  if (capacity) filters.capacity = Number(capacity);
-  if (amenities) filters.amenities = { contains: amenities };
+  if (capacity) {
+    filters.capacity = Number(capacity);
+  }
 
-  const rooms = await prisma.room.findMany({ where: filters });
-  return new Response(JSON.stringify(rooms), { status: 200 });
+  if (amenities) {
+    filters.amenities = {
+      equals: { [amenities]: true },
+    };
+  }
+  try {
+    const rooms = await prisma.room.findMany({ where: filters });
+
+    return new Response(JSON.stringify(rooms), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("Error fetching rooms:", error);
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
+      status: 500,
+    });
+  }
 }
 
 export async function POST(req: Request) {

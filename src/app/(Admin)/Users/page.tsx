@@ -9,7 +9,7 @@ interface User {
   id: string;
   email: string;
   role: string;
-  bookings: number;
+  bookings: [];
 }
 
 export default function AllRooms() {
@@ -32,7 +32,7 @@ export default function AllRooms() {
       await Axios.delete(`/api/users/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["users"]);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
 

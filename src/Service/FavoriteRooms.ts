@@ -1,6 +1,6 @@
+import useAxios from "@/CustomHooks/useAxios";
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
-
+const Axios = useAxios();
 export const getFavoriteRooms = (): string[] => {
   if (typeof window !== "undefined") {
     const favorites = localStorage.getItem("favoriteRooms");
@@ -8,13 +8,15 @@ export const getFavoriteRooms = (): string[] => {
   }
   return [];
 };
-const fetchFavoriteRooms = async () => {
-  const roomIds = getFavoriteRooms();
-  if (roomIds.length === 0) return [];
-  const res = await axios.post("/api/favorites", { roomIds });
-  return res.data;
-};
 
 export default function useFavorites() {
-  return useQuery({ queryKey: ["favorites"], queryFn: fetchFavoriteRooms });
+  return useQuery({
+    queryKey: ["favorites"],
+    queryFn: async () => {
+      const roomIds = getFavoriteRooms();
+      if (roomIds.length === 0) return [];
+      const res = await Axios.post("/api/favorites", { roomIds });
+      return res.data;
+    },
+  });
 }

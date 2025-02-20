@@ -1,14 +1,12 @@
+import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
-    const { roomIds } = await req.json(); // Get favorite room IDs from the request
+    const { roomIds } = await req.json();
 
     if (!roomIds || roomIds.length === 0) {
-      return NextResponse.json([], { status: 200 }); // Return empty if no favorites
+      return NextResponse.json([], { status: 200 });
     }
 
     const favoriteRooms = await prisma.room.findMany({

@@ -40,3 +40,12 @@ export async function fetchBookings() {
   const res = await Axios.get("/api/bookings");
   return res;
 }
+
+export const UserRoleCheck = async () => {
+  try {
+    const response = await Axios.get("/api/auth/CheckUserRole");
+    return response.data.role === "ADMIN";
+  } catch (error) {
+    console.error("Error fetching user role:", error);
+  }
+};

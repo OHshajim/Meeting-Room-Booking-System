@@ -4,38 +4,27 @@ import { useQuery } from "@tanstack/react-query";
 import useAxios from "@/CustomHooks/useAxios";
 import useFavorites from "@/Service/FavoriteRooms";
 import Loading from "@/Components/Loading";
-import {
-  FaDoorOpen,
-  FaCheckCircle,
-  FaHeart,
-  FaCalendarCheck,
-} from "react-icons/fa";
+import { FaDoorOpen, FaHeart, FaCalendarCheck } from "react-icons/fa";
 import { SaveUser } from "@/Service/APICalls";
-
-const fetchDashboardData = async () => {
-  const Axios = useAxios();
-  const { data: favoriteRooms } = await useFavorites();
-
-  const [roomsRes, bookingsRes] = await Promise.all([
-    Axios.get("/api/rooms"),
-    Axios.get("/api/bookings"),
-  ]);
-
-  return {
-    totalRooms: roomsRes.data.length,
-    availableRooms: roomsRes.data.filter((room: any) => !room.bookings).length,
-    lastBooking: bookingsRes.data[bookingsRes.data.length - 1] || null,
-    favoriteRoom: favoriteRooms.length > 0 ? favoriteRooms[0] : null,
-  };
-};
+import Calender from "@/Components/Calender";
 
 export default function Home() {
   SaveUser();
+  const Axios = useAxios();
+
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard"],
-    queryFn: fetchDashboardData,
+    queryKey: ["dashboardData"],
+    queryFn: async () => {
+      const roomsRes = await Axios.get("/api/rooms");
+      const bookingsRes = await Axios.get(`/api/bookings`);
+
+      return {
+        totalRooms: roomsRes.data.length,
+        lastBooking: bookingsRes.data[bookingsRes.data.length - 1] || null,
+      };
+    },
   });
-  console.log(data);
+  const { data: favoriteRooms } = useFavorites();
 
   if (isLoading)
     return (
@@ -45,12 +34,12 @@ export default function Home() {
     );
 
   return (
-    <div className="p-6">
+    <div className="p-6 w-full">
       <h2 className="text-3xl font-bold mb-6 text-center">
         Dashboard Overview
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Total Rooms */}
         <DashboardCard
           title="Total Rooms"
@@ -58,15 +47,8 @@ export default function Home() {
           icon={<FaDoorOpen className="text-blue-600 text-3xl" />}
         />
 
-        {/* Available Rooms */}
-        {/* <DashboardCard
-          title="Available Rooms"
-          value={data?.availableRooms}
-          icon={<FaCheckCircle className="text-green-600 text-3xl" />}
-        /> */}
-
         {/* Last Booking */}
-        {/* <DashboardCard
+        <DashboardCard
           title="Last Booking"
           value={
             data?.lastBooking ? (
@@ -81,18 +63,23 @@ export default function Home() {
             )
           }
           icon={<FaCalendarCheck className="text-orange-600 text-3xl" />}
-        /> */}
+        />
 
         {/* Favorite Room */}
-        {/* <DashboardCard
+        <DashboardCard
           title="Favorite Room"
           value={
-            data?.favoriteRoom
-              ? data.favoriteRoom.name
+            favoriteRooms.length > 0
+              ? favoriteRooms.length
               : "No favorite room selected"
           }
           icon={<FaHeart className="text-red-600 text-3xl" />}
-        /> */}
+        />
+      </div>
+
+      {/* Full-Page Calendar */}
+      <div className="w-full mt-8 h-full flex justify-center items-center">
+        <Calender />
       </div>
     </div>
   );
