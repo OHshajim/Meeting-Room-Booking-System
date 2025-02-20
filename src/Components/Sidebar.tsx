@@ -1,4 +1,5 @@
 "use client";
+import useAxios from "@/CustomHooks/useAxios";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CiMenuFries } from "react-icons/ci";
@@ -12,17 +13,17 @@ import {
 import { RxCross2 } from "react-icons/rx";
 
 const Sidebar = () => {
+  const Axios = useAxios();
   const [openSidebar, setOpenSidebar] = useState(false);
   const [isAdmin, setAdmin] = useState(false);
 
   useEffect(() => {
     const UserRoleCheck = async () => {
       try {
-        const response = await fetch(
+        const response = await Axios.get(
           `${window.location.origin}/api/auth/CheckUserRole`
         );
-        const data = await response.json();
-        setAdmin(data.role === "ADMIN");
+        setAdmin(response.data.role === "ADMIN");
       } catch (error) {
         console.error("Error fetching user role:", error);
       }
@@ -77,7 +78,11 @@ const SidebarLinks = ({
   <nav className="mt-6">
     {[
       { href: "/", icon: <FaHome />, label: "Dashboard" },
-      { href: "/BookingRooms", icon: <FaCalendarAlt />, label: "Booking Rooms" },
+      {
+        href: "/BookingRooms",
+        icon: <FaCalendarAlt />,
+        label: "Booking Rooms",
+      },
     ].map(({ href, icon, label }) => (
       <Link
         key={href}
@@ -94,7 +99,7 @@ const SidebarLinks = ({
       <>
         <hr className="my-6 border-gray-200 dark:border-gray-600" />
         <Link
-          href="/admin"
+          href="/AllRooms"
           className="flex items-center px-4 py-2 mt-5 text-gray-600 transition-colors duration-300 transform rounded-md dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:text-gray-700"
           onClick={handleClose}
         >
@@ -102,7 +107,7 @@ const SidebarLinks = ({
           <span className="mx-4 font-medium">All Rooms</span>
         </Link>
         <Link
-          href="/admin"
+          href="/Users"
           className="flex items-center px-4 py-2 mt-5 text-gray-600 transition-colors duration-300 transform rounded-md dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-gray-200 hover:text-gray-700"
           onClick={handleClose}
         >

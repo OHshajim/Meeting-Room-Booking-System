@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
-
-const SaveUser = () => {
+import useAxios from "@/CustomHooks/useAxios";
+const Axios = useAxios();
+export const SaveUser = () => {
   const [success, setSuccess] = useState(false);
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -14,15 +15,9 @@ const SaveUser = () => {
 
   useEffect(() => {
     if (isClient && user) {
-      fetch("/api/auth/saveUser")
-        .then((res) => res.json())
+      Axios.get("/api/auth/saveUser")
         .then((data) => {
-          if (data.error) {
-            setSuccess(false);
-            signOut();
-          } else {
-            setSuccess(true);
-          }
+          setSuccess(true);
         })
         .catch(() => {
           setSuccess(false);
@@ -31,9 +26,17 @@ const SaveUser = () => {
     }
   }, [isClient, user]);
 
-  if (!isClient) return null; 
+  if (!isClient) return null;
 
   return success;
 };
 
-export default SaveUser;
+export async function fetchRooms() {
+  const res = await Axios.get("/api/rooms");
+  return res;
+}
+
+export async function fetchBookings() {
+  const res = await Axios.get("/api/bookings");
+  return res;
+}
