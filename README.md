@@ -4,6 +4,11 @@
 
 This project is a Meeting Room Booking System that allows users to view, book, and manage meeting rooms. It supports multiple rooms, time slots, and user bookings. The system includes authentication and role-based authorization for booking and managing rooms. The system also prevents double-booking by checking for conflicts.
 
+#### Admin 
+email : admin@test.com
+pass : 1234admin
+
+
 ## Technologies Used
 
 - **Next.js**
